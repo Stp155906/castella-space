@@ -11,12 +11,12 @@ export default function Venus() {
 
   return (
     <mesh ref={meshRef}>
-      <sphereGeometry args={[1.5, 64, 64]} />
+      <sphereGeometry args={[1.5, 96, 96]} />
       <meshStandardMaterial
         color="#d89b52"
         emissive="#b8642b"
-        emissiveIntensity={0.8}
-        roughness={0.95}
+        emissiveIntensity={0.95}
+        roughness={0.92}
         metalness={0.02}
       />
     </mesh>
