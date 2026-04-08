@@ -1,5 +1,6 @@
 import { Stars } from "@react-three/drei"
 import { useFrame } from "@react-three/fiber"
+import { EffectComposer, Bloom } from "@react-three/postprocessing"
 import Venus from "./Venus"
 import { useRef, useState, useEffect } from "react"
 
@@ -43,14 +44,93 @@ function FloatingParticles({ entered }) {
         />
       </bufferGeometry>
       <pointsMaterial
-        size={entered ? 0.07 : 0.04}
-        color={entered ? "#ffd9b0" : "#ffd7a1"}
+        size={entered ? 0.08 : 0.045}
+        color={entered ? "#ffe2bf" : "#ffd7a1"}
         transparent
-        opacity={entered ? 0.95 : 0.82}
+        opacity={entered ? 0.98 : 0.86}
         sizeAttenuation
         depthWrite={false}
       />
     </points>
+  )
+}
+
+function InnerParticles({ entered }) {
+  const pointsRef = useRef()
+
+  const [positions] = useState(() => {
+    const count = 1000
+    const array = new Float32Array(count * 3)
+
+    for (let i = 0; i < count; i++) {
+      const i3 = i * 3
+      array[i3] = (Math.random() - 0.5) * 8
+      array[i3 + 1] = (Math.random() - 0.5) * 8
+      array[i3 + 2] = (Math.random() - 0.5) * 8
+    }
+
+    return array
+  })
+
+  useFrame((state) => {
+    if (!pointsRef.current) return
+    const t = state.clock.elapsedTime
+    pointsRef.current.rotation.y = t * 0.03
+    pointsRef.current.rotation.z = Math.sin(t * 0.2) * 0.08
+  })
+
+  if (!entered) return null
+
+  return (
+    <points ref={pointsRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={positions.length / 3}
+          array={positions}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        size={0.06}
+        color="#fff0d6"
+        transparent
+        opacity={0.9}
+        sizeAttenuation
+        depthWrite={false}
+      />
+    </points>
+  )
+}
+
+function InnerOrbs({ entered }) {
+  const groupRef = useRef()
+
+  useFrame((state) => {
+    if (!groupRef.current) return
+    groupRef.current.rotation.y += 0.001
+    groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.1) * 0.05
+  })
+
+  if (!entered) return null
+
+  return (
+    <group ref={groupRef}>
+      <mesh position={[1.8, 0.8, -0.5]}>
+        <sphereGeometry args={[0.38, 32, 32]} />
+        <meshBasicMaterial color="#ffe1bf" transparent opacity={0.12} />
+      </mesh>
+
+      <mesh position={[-1.5, -0.6, 0.4]}>
+        <sphereGeometry args={[0.28, 32, 32]} />
+        <meshBasicMaterial color="#ffd2a0" transparent opacity={0.1} />
+      </mesh>
+
+      <mesh position={[0.4, -1.4, -1]}>
+        <sphereGeometry args={[0.22, 32, 32]} />
+        <meshBasicMaterial color="#fff1dc" transparent opacity={0.09} />
+      </mesh>
+    </group>
   )
 }
 
@@ -60,7 +140,7 @@ function VenusGlow({ entered }) {
   useFrame((state) => {
     if (!glowRef.current) return
     const pulse = 1 + Math.sin(state.clock.elapsedTime * 1.2) * 0.02
-    const base = entered ? 1.42 : 1.22
+    const base = entered ? 1.46 : 1.24
     glowRef.current.scale.setScalar(base * pulse)
   })
 
@@ -68,9 +148,9 @@ function VenusGlow({ entered }) {
     <mesh ref={glowRef}>
       <sphereGeometry args={[1.5, 96, 96]} />
       <meshBasicMaterial
-        color={entered ? "#ffc07a" : "#f2b56b"}
+        color={entered ? "#ffd09a" : "#ffc27a"}
         transparent
-        opacity={entered ? 0.16 : 0.09}
+        opacity={entered ? 0.2 : 0.12}
       />
     </mesh>
   )
@@ -89,9 +169,9 @@ function VenusCloudShell({ entered }) {
     <mesh ref={shellRef} scale={entered ? 1.5 : 1.28}>
       <sphereGeometry args={[1.5, 96, 96]} />
       <meshBasicMaterial
-        color={entered ? "#ffd3a3" : "#efbb78"}
+        color={entered ? "#ffe0bd" : "#f4c98d"}
         transparent
-        opacity={entered ? 0.2 : 0.08}
+        opacity={entered ? 0.18 : 0.08}
       />
     </mesh>
   )
@@ -103,7 +183,7 @@ function VenusVeil({ entered }) {
   useFrame((state) => {
     if (!veilRef.current) return
     const pulse = 1 + Math.sin(state.clock.elapsedTime * 0.9) * 0.015
-    veilRef.current.scale.setScalar((entered ? 1.95 : 1.7) * pulse)
+    veilRef.current.scale.setScalar((entered ? 2.0 : 1.72) * pulse)
     veilRef.current.rotation.z += entered ? 0.0015 : 0.0004
   })
 
@@ -111,10 +191,64 @@ function VenusVeil({ entered }) {
     <mesh ref={veilRef}>
       <sphereGeometry args={[1.5, 64, 64]} />
       <meshBasicMaterial
-        color={entered ? "#ffcf9f" : "#f3c38b"}
+        color={entered ? "#ffe3c2" : "#f6d2a4"}
         transparent
-        opacity={entered ? 0.08 : 0.03}
+        opacity={entered ? 0.09 : 0.035}
       />
+    </mesh>
+  )
+}
+
+function InnerVeilRings({ entered }) {
+  const ringA = useRef()
+  const ringB = useRef()
+
+  useFrame((state) => {
+    if (!entered) return
+
+    if (ringA.current) {
+      ringA.current.rotation.z += 0.002
+      ringA.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.2
+    }
+
+    if (ringB.current) {
+      ringB.current.rotation.z -= 0.0015
+      ringB.current.rotation.y = Math.cos(state.clock.elapsedTime * 0.25) * 0.25
+    }
+  })
+
+  if (!entered) return null
+
+  return (
+    <group>
+      <mesh ref={ringA} rotation={[1.2, 0.2, 0]}>
+        <torusGeometry args={[2.35, 0.08, 24, 120]} />
+        <meshBasicMaterial color="#ffe2bf" transparent opacity={0.1} />
+      </mesh>
+
+      <mesh ref={ringB} rotation={[0.8, -0.4, 0.4]}>
+        <torusGeometry args={[2.9, 0.05, 24, 120]} />
+        <meshBasicMaterial color="#ffd0a0" transparent opacity={0.07} />
+      </mesh>
+    </group>
+  )
+}
+
+function CorePulse({ entered }) {
+  const pulseRef = useRef()
+
+  useFrame((state) => {
+    if (!pulseRef.current) return
+    const s = 1 + Math.sin(state.clock.elapsedTime * 1.8) * 0.06
+    pulseRef.current.scale.setScalar(s)
+  })
+
+  if (!entered) return null
+
+  return (
+    <mesh ref={pulseRef}>
+      <sphereGeometry args={[1.1, 64, 64]} />
+      <meshBasicMaterial color="#ffe1b3" transparent opacity={0.08} />
     </mesh>
   )
 }
@@ -134,9 +268,9 @@ function ThresholdFog({ entered }) {
     <mesh ref={fogRef} scale={[12, 12, 12]}>
       <sphereGeometry args={[1, 48, 48]} />
       <meshBasicMaterial
-        color="#9f4f1f"
+        color="#b86a32"
         transparent
-        opacity={0.045}
+        opacity={0.035}
         side={2}
       />
     </mesh>
@@ -329,6 +463,7 @@ function VenusGroup({ entered, setEntered }) {
       <VenusVeil entered={entered} />
       <VenusGlow entered={entered} />
       <VenusCloudShell entered={entered} />
+      <CorePulse entered={entered} />
       <Venus />
     </group>
   )
@@ -337,12 +472,12 @@ function VenusGroup({ entered, setEntered }) {
 export default function VenusScene({ entered, setEntered }) {
   return (
     <>
-      <color attach="background" args={[entered ? "#16080b" : "#04010a"]} />
-      <fog attach="fog" args={[entered ? "#2b1008" : "#04010a", entered ? 6 : 14, entered ? 18 : 42]} />
+      <color attach="background" args={[entered ? "#12070a" : "#04010a"]} />
+      <fog attach="fog" args={[entered ? "#241008" : "#04010a", entered ? 6 : 14, entered ? 18 : 42]} />
 
-      <ambientLight intensity={entered ? 0.7 : 0.35} />
-      <pointLight position={[3, 2, 4]} intensity={entered ? 36 : 20} color="#ffd19a" />
-      <pointLight position={[-4, -2, -4]} intensity={entered ? 10 : 4} color="#ff9e6d" />
+      <ambientLight intensity={entered ? 0.72 : 0.35} />
+      <pointLight position={[3, 2, 4]} intensity={entered ? 40 : 22} color="#ffdcb2" />
+      <pointLight position={[-4, -2, -4]} intensity={entered ? 12 : 5} color="#ffb57d" />
 
       <Stars
         radius={90}
@@ -355,8 +490,20 @@ export default function VenusScene({ entered, setEntered }) {
 
       <ThresholdFog entered={entered} />
       <FloatingParticles entered={entered} />
+      <InnerParticles entered={entered} />
+      <InnerOrbs entered={entered} />
+      <InnerVeilRings entered={entered} />
       <CameraRig entered={entered} />
       <VenusGroup entered={entered} setEntered={setEntered} />
+
+      <EffectComposer>
+        <Bloom
+          intensity={entered ? 1.45 : 1.0}
+          luminanceThreshold={0.15}
+          luminanceSmoothing={0.9}
+          mipmapBlur
+        />
+      </EffectComposer>
     </>
   )
 }
