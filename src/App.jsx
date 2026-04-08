@@ -54,12 +54,11 @@ const TIMELINE_ITEMS = [
     accent: "#bfa8ff",
   },
   {
-    id: "premium",
-    label: "Personalized",
-    title: "Personalized Insight",
-    body: "Unlock with Castella Premium.",
-    accent: "#ffffff",
-    locked: true,
+    id: "world",
+    label: "World",
+    title: "Planet in the World",
+    body: "Mercury in collective life shapes headlines, trade, language, media, transport, and the speed of public response.",
+    accent: "#ffffff"
   },
 ]
 
