@@ -16,41 +16,7 @@ function createSeededRandom(seed = 123456789) {
   }
 }
 
-function NebulaBands({ activeProgressRef }) {
-  const leftRef = useRef()
-  const rightRef = useRef()
 
-  useFrame((state) => {
-    const t = state.clock.elapsedTime
-    const p = activeProgressRef.current
-
-    if (leftRef.current) {
-      leftRef.current.position.y = 2.5 + p * 0.9
-      leftRef.current.position.z = -8 - p * 1.1
-      leftRef.current.rotation.z = Math.sin(t * 0.12) * 0.12
-    }
-
-    if (rightRef.current) {
-      rightRef.current.position.y = -1.2 + p * 0.7
-      rightRef.current.position.z = -10 - p * 1.3
-      rightRef.current.rotation.z = Math.cos(t * 0.11) * 0.14
-    }
-  })
-
-  return (
-    <>
-      <mesh ref={leftRef} position={[-4.8, 2.5, -8]}>
-        <planeGeometry args={[10, 10]} />
-        <meshBasicMaterial color="#8a7bca" transparent opacity={0.18} depthWrite={false} />
-      </mesh>
-
-      <mesh ref={rightRef} position={[4.8, -1.2, -10]}>
-        <planeGeometry args={[12, 12]} />
-        <meshBasicMaterial color="#66599d" transparent opacity={0.15} depthWrite={false} />
-      </mesh>
-    </>
-  )
-}
 
 function DustField({ activeProgressRef }) {
   const pointsRef = useRef()
@@ -280,9 +246,9 @@ function PlanetAnchor({ activeProgressRef, activeIndex }) {
     const t = state.clock.elapsedTime
     const p = activeProgressRef.current
 
-    const anchorX = 1.7 + Math.sin(p * 0.55 + t * 0.45) * 0.22
-    const anchorY = p * NODE_SPACING_Y + Math.sin(t * 0.35) * 0.18
-    const anchorZ = p * NODE_SPACING_Z - 1.8 + Math.cos(t * 0.3) * 0.18
+    const anchorX = 0.45 + Math.sin(p * 0.55 + t * 0.45) * 0.16
+    const anchorY = p * NODE_SPACING_Y + Math.sin(t * 0.35) * 0.16
+    const anchorZ = p * NODE_SPACING_Z - 2.1 + Math.cos(t * 0.3) * 0.16
 
     groupRef.current.position.x += (anchorX - groupRef.current.position.x) * 0.06
     groupRef.current.position.y += (anchorY - groupRef.current.position.y) * 0.06
@@ -292,21 +258,14 @@ function PlanetAnchor({ activeProgressRef, activeIndex }) {
     groupRef.current.rotation.z = Math.sin(t * 0.24) * 0.05
 
     const targetScale = activeIndex === 7 ? 0.92 : 1
-    groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.05)
+    groupRef.current.scale.lerp(
+      new THREE.Vector3(targetScale, targetScale, targetScale),
+      0.05
+    )
   })
 
   return (
     <group ref={groupRef}>
-      <mesh scale={1.68}>
-        <sphereGeometry args={[1.5, 64, 64]} />
-        <meshBasicMaterial color="#d9ceff" transparent opacity={0.05} />
-      </mesh>
-
-      <mesh scale={1.26}>
-        <sphereGeometry args={[1.5, 64, 64]} />
-        <meshBasicMaterial color="#b7b0ef" transparent opacity={0.06} />
-      </mesh>
-
       <Venus />
     </group>
   )
@@ -363,7 +322,6 @@ export default function VenusScene({
 
       <Stars radius={120} depth={100} count={5000} factor={2.7} saturation={0} fade />
 
-      <NebulaBands activeProgressRef={activeProgressRef} />
       <DustField activeProgressRef={activeProgressRef} />
       <SpeedLines activeProgressRef={activeProgressRef} />
 

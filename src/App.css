@@ -44,13 +44,13 @@ button {
 
 .planet-pill {
   position: absolute;
-  top: 22px;
-  left: 22px;
+  top: 18px;
+  left: 18px;
   padding: 12px 20px;
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.92);
   color: #15151b;
-  font-size: 18px;
+  font-size: 17px;
   line-height: 1;
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
 }
@@ -58,28 +58,32 @@ button {
 .card-layer {
   position: absolute;
   inset: 0;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  padding-left: clamp(18px, 5vw, 56px);
+  pointer-events: none;
 }
 
 .info-card {
   position: relative;
-  width: min(420px, calc(100vw - 56px));
-  min-height: 360px;
-  border-radius: 30px;
-  background: rgba(92, 92, 102, 0.24);
+  width: min(330px, calc(100vw - 96px));
+  min-height: 250px;
+  border-radius: 26px;
+  background: rgba(92, 92, 102, 0.18);
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(22px);
   -webkit-backdrop-filter: blur(22px);
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.32),
+    0 20px 60px rgba(0, 0, 0, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
   opacity: 0;
-  transform: translateY(12px) scale(0.985);
+  transform: translateY(10px) scale(0.985);
   transition:
-    opacity 280ms ease,
-    transform 280ms ease;
+    opacity 260ms ease,
+    transform 260ms ease;
   overflow: hidden;
+  pointer-events: auto;
 }
 
 .info-card.visible {
@@ -90,49 +94,49 @@ button {
 .info-card-glow {
   position: absolute;
   inset: -20%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--card-accent) 22%, transparent), transparent 55%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--card-accent) 20%, transparent), transparent 56%);
   pointer-events: none;
 }
 
 .info-card-inner {
   position: relative;
   z-index: 1;
-  padding: 34px 28px;
-  text-align: center;
+  padding: 24px 22px;
+  text-align: left;
   color: #f5f0ff;
 }
 
 .info-card-kicker {
-  margin-bottom: 16px;
-  font-size: 13px;
+  margin-bottom: 12px;
+  font-size: 11px;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.56);
 }
 
 .info-card h2 {
-  margin: 0 0 16px;
-  font-size: clamp(34px, 4vw, 46px);
-  line-height: 1;
+  margin: 0 0 12px;
+  font-size: clamp(28px, 3vw, 34px);
+  line-height: 1.02;
   letter-spacing: -0.03em;
   font-weight: 700;
 }
 
 .info-card p {
-  margin: 0 auto;
-  max-width: 320px;
-  font-size: 21px;
-  line-height: 1.35;
+  margin: 0;
+  max-width: 260px;
+  font-size: 17px;
+  line-height: 1.42;
   color: rgba(255, 255, 255, 0.84);
 }
 
 .unlock-btn {
-  margin-top: 28px;
-  padding: 16px 18px;
+  margin-top: 22px;
+  padding: 14px 16px;
   width: 100%;
-  max-width: 320px;
+  max-width: 260px;
   border: none;
-  border-radius: 18px;
+  border-radius: 16px;
   background: rgba(255, 255, 255, 0.96);
   color: #17171b;
   font-weight: 700;
@@ -143,24 +147,24 @@ button {
 .right-rail {
   position: absolute;
   top: 50%;
-  right: 28px;
+  right: 22px;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   pointer-events: auto;
 }
 
 .rail-item {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   border: none;
   background: transparent;
   color: rgba(255, 255, 255, 0.48);
   cursor: pointer;
   padding: 0;
-  transition: color 200ms ease, transform 200ms ease;
+  transition: color 180ms ease, transform 180ms ease;
 }
 
 .rail-item.active {
@@ -169,7 +173,7 @@ button {
 }
 
 .rail-tick {
-  width: 28px;
+  width: 26px;
   height: 2px;
   border-radius: 99px;
   background: currentColor;
@@ -177,7 +181,7 @@ button {
 }
 
 .rail-label {
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   white-space: nowrap;
@@ -186,11 +190,13 @@ button {
 .hint {
   position: absolute;
   left: 50%;
-  bottom: 22px;
+  bottom: 18px;
   transform: translateX(-50%);
   color: rgba(255, 255, 255, 0.56);
-  font-size: 14px;
+  font-size: 13px;
   letter-spacing: 0.04em;
+  text-align: center;
+  width: calc(100vw - 40px);
 }
 
 .point-label {
@@ -208,8 +214,40 @@ button {
 }
 
 @media (max-width: 900px) {
+  .card-layer {
+    align-items: flex-end;
+    justify-content: flex-start;
+    padding-left: 16px;
+    padding-bottom: 96px;
+  }
+
+  .info-card {
+    width: min(280px, calc(100vw - 92px));
+    min-height: 210px;
+    border-radius: 22px;
+  }
+
+  .info-card-inner {
+    padding: 18px 18px;
+  }
+
+  .info-card h2 {
+    font-size: 24px;
+  }
+
+  .info-card p {
+    max-width: 100%;
+    font-size: 15px;
+    line-height: 1.4;
+  }
+
+  .unlock-btn {
+    max-width: 100%;
+    font-size: 14px;
+  }
+
   .right-rail {
-    right: 16px;
+    right: 12px;
     gap: 12px;
   }
 
@@ -217,27 +255,15 @@ button {
     display: none;
   }
 
-  .info-card {
-    width: min(400px, calc(100vw - 42px));
-    min-height: 320px;
-  }
-
-  .info-card h2 {
-    font-size: 32px;
-  }
-
-  .info-card p {
-    font-size: 18px;
-    max-width: 285px;
-  }
-
   .planet-pill {
+    top: 16px;
+    left: 16px;
     font-size: 16px;
     padding: 11px 18px;
   }
 
   .hint {
-    bottom: 16px;
+    bottom: 14px;
     font-size: 12px;
   }
 }

@@ -68,10 +68,7 @@ function InfoCard({ item, visible }) {
 
   return (
     <div className={`info-card ${visible ? "visible" : ""} ${item.locked ? "locked" : ""}`}>
-      <div
-        className="info-card-glow"
-        style={{ "--card-accent": item.accent }}
-      />
+      <div className="info-card-glow" style={{ "--card-accent": item.accent }} />
       <div className="info-card-inner">
         <div className="info-card-kicker">{item.label}</div>
         <h2>{item.title}</h2>
@@ -85,7 +82,11 @@ function InfoCard({ item, visible }) {
 export default function App() {
   const [activeIndex, setActiveIndex] = useState(0)
   const [hoveredIndex, setHoveredIndex] = useState(null)
-  const lockRef = useRef(false)
+
+  const wheelLockRef = useRef(false)
+  const touchStartYRef = useRef(null)
+  const touchStartXRef = useRef(null)
+  const touchLockedRef = useRef(false)
 
   const focusedIndex = hoveredIndex ?? activeIndex
   const focusedItem = useMemo(() => TIMELINE_ITEMS[focusedIndex], [focusedIndex])
@@ -101,32 +102,91 @@ export default function App() {
     [clampIndex]
   )
 
+  const moveNext = useCallback(() => {
+    setActiveIndex((prev) => clampIndex(prev + 1))
+  }, [clampIndex])
+
+  const movePrev = useCallback(() => {
+    setActiveIndex((prev) => clampIndex(prev - 1))
+  }, [clampIndex])
+
   useEffect(() => {
     const onWheel = (event) => {
-      if (lockRef.current) return
+      if (wheelLockRef.current) return
       if (Math.abs(event.deltaY) < 8) return
 
-      lockRef.current = true
-      setActiveIndex((prev) => clampIndex(prev + (event.deltaY > 0 ? 1 : -1)))
+      wheelLockRef.current = true
+      if (event.deltaY > 0) moveNext()
+      else movePrev()
 
       window.setTimeout(() => {
-        lockRef.current = false
-      }, 520)
+        wheelLockRef.current = false
+      }, 500)
     }
 
     const onKeyDown = (event) => {
-      if (event.key === "ArrowDown") moveTo(activeIndex + 1)
-      if (event.key === "ArrowUp") moveTo(activeIndex - 1)
+      if (event.key === "ArrowDown") moveNext()
+      if (event.key === "ArrowUp") movePrev()
+    }
+
+    const onTouchStart = (event) => {
+      if (event.touches.length !== 1) return
+      touchStartYRef.current = event.touches[0].clientY
+      touchStartXRef.current = event.touches[0].clientX
+    }
+
+    const onTouchMove = (event) => {
+      if (event.touches.length !== 1) return
+      if (touchLockedRef.current) return
+      if (touchStartYRef.current == null || touchStartXRef.current == null) return
+
+      const currentY = event.touches[0].clientY
+      const currentX = event.touches[0].clientX
+
+      const deltaY = currentY - touchStartYRef.current
+      const deltaX = currentX - touchStartXRef.current
+
+      const verticalIntent = Math.abs(deltaY) > Math.abs(deltaX)
+      const threshold = 42
+
+      if (!verticalIntent) return
+
+      if (Math.abs(deltaY) > threshold) {
+        touchLockedRef.current = true
+
+        if (deltaY < 0) moveNext()
+        else movePrev()
+
+        window.setTimeout(() => {
+          touchLockedRef.current = false
+        }, 420)
+
+        touchStartYRef.current = currentY
+        touchStartXRef.current = currentX
+      }
+    }
+
+    const onTouchEnd = () => {
+      touchStartYRef.current = null
+      touchStartXRef.current = null
     }
 
     window.addEventListener("wheel", onWheel, { passive: true })
     window.addEventListener("keydown", onKeyDown)
+    window.addEventListener("touchstart", onTouchStart, { passive: true })
+    window.addEventListener("touchmove", onTouchMove, { passive: true })
+    window.addEventListener("touchend", onTouchEnd, { passive: true })
+    window.addEventListener("touchcancel", onTouchEnd, { passive: true })
 
     return () => {
       window.removeEventListener("wheel", onWheel)
       window.removeEventListener("keydown", onKeyDown)
+      window.removeEventListener("touchstart", onTouchStart)
+      window.removeEventListener("touchmove", onTouchMove)
+      window.removeEventListener("touchend", onTouchEnd)
+      window.removeEventListener("touchcancel", onTouchEnd)
     }
-  }, [activeIndex, clampIndex, moveTo])
+  }, [moveNext, movePrev])
 
   return (
     <div className="app-shell">
@@ -143,6 +203,10 @@ export default function App() {
       <div className="overlay">
         <div className="planet-pill">Mercury</div>
 
+        <div className="card-layer">
+          <InfoCard item={focusedItem} visible />
+        </div>
+
         <div className="right-rail">
           {TIMELINE_ITEMS.map((item, index) => (
             <button
@@ -151,6 +215,7 @@ export default function App() {
               onMouseEnter={() => setHoveredIndex(index)}
               onMouseLeave={() => setHoveredIndex(null)}
               onClick={() => moveTo(index)}
+              aria-label={item.label}
             >
               <span className="rail-tick" />
               <span className="rail-label">{item.label}</span>
@@ -158,12 +223,8 @@ export default function App() {
           ))}
         </div>
 
-        <div className="card-layer">
-          <InfoCard item={focusedItem} visible />
-        </div>
-
         <div className="hint">
-          Scroll, swipe, or tap points to move through the journey
+          Swipe up/down, scroll, or tap points to move through the journey
         </div>
       </div>
     </div>
