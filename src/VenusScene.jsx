@@ -1,36 +1,83 @@
-import { Stars } from "@react-three/drei"
+import { Html, Stars } from "@react-three/drei"
 import { useFrame } from "@react-three/fiber"
-import { EffectComposer, Bloom } from "@react-three/postprocessing"
+import { Bloom, EffectComposer } from "@react-three/postprocessing"
+import { useMemo, useRef } from "react"
+import * as THREE from "three"
 import Venus from "./Venus"
-import { useRef, useState, useEffect } from "react"
 
-function FloatingParticles({ entered }) {
-  const pointsRef = useRef()
+const NODE_SPACING_Y = -3.35
+const NODE_SPACING_Z = -4.2
 
-  const [positions] = useState(() => {
-    const count = 1400
-    const array = new Float32Array(count * 3)
+function createSeededRandom(seed = 123456789) {
+  let value = seed >>> 0
+  return () => {
+    value = (1664525 * value + 1013904223) >>> 0
+    return value / 4294967296
+  }
+}
 
-    for (let i = 0; i < count; i++) {
-      const i3 = i * 3
-      array[i3] = (Math.random() - 0.5) * 22
-      array[i3 + 1] = (Math.random() - 0.5) * 14
-      array[i3 + 2] = (Math.random() - 0.5) * 24
+function NebulaBands({ activeProgressRef }) {
+  const leftRef = useRef()
+  const rightRef = useRef()
+
+  useFrame((state) => {
+    const t = state.clock.elapsedTime
+    const p = activeProgressRef.current
+
+    if (leftRef.current) {
+      leftRef.current.position.y = 2.5 + p * 0.9
+      leftRef.current.position.z = -8 - p * 1.1
+      leftRef.current.rotation.z = Math.sin(t * 0.12) * 0.12
     }
 
-    return array
+    if (rightRef.current) {
+      rightRef.current.position.y = -1.2 + p * 0.7
+      rightRef.current.position.z = -10 - p * 1.3
+      rightRef.current.rotation.z = Math.cos(t * 0.11) * 0.14
+    }
   })
+
+  return (
+    <>
+      <mesh ref={leftRef} position={[-4.8, 2.5, -8]}>
+        <planeGeometry args={[10, 10]} />
+        <meshBasicMaterial color="#8a7bca" transparent opacity={0.18} depthWrite={false} />
+      </mesh>
+
+      <mesh ref={rightRef} position={[4.8, -1.2, -10]}>
+        <planeGeometry args={[12, 12]} />
+        <meshBasicMaterial color="#66599d" transparent opacity={0.15} depthWrite={false} />
+      </mesh>
+    </>
+  )
+}
+
+function DustField({ activeProgressRef }) {
+  const pointsRef = useRef()
+
+  const positions = useMemo(() => {
+    const rand = createSeededRandom(1001)
+    const count = 2200
+    const arr = new Float32Array(count * 3)
+
+    for (let i = 0; i < count; i += 1) {
+      const i3 = i * 3
+      arr[i3] = (rand() - 0.5) * 24
+      arr[i3 + 1] = (rand() - 0.5) * 42
+      arr[i3 + 2] = -rand() * 80
+    }
+
+    return arr
+  }, [])
 
   useFrame((state) => {
     if (!pointsRef.current) return
+    const p = activeProgressRef.current
     const t = state.clock.elapsedTime
-    pointsRef.current.rotation.y = t * 0.01
-    pointsRef.current.rotation.x = Math.sin(t * 0.08) * 0.04
-    pointsRef.current.position.z += entered ? 0.003 : 0.001
 
-    if (pointsRef.current.position.z > 8) {
-      pointsRef.current.position.z = -2
-    }
+    pointsRef.current.position.y = p * 3.35
+    pointsRef.current.position.z = p * 4.2
+    pointsRef.current.rotation.z = Math.sin(t * 0.1) * 0.03
   })
 
   return (
@@ -38,468 +85,304 @@ function FloatingParticles({ entered }) {
       <bufferGeometry>
         <bufferAttribute
           attach="attributes-position"
-          count={positions.length / 3}
           array={positions}
+          count={positions.length / 3}
           itemSize={3}
         />
       </bufferGeometry>
       <pointsMaterial
-        size={entered ? 0.055 : 0.035}
-        color={entered ? "#ffe7c9" : "#ffe0b6"}
+        size={0.03}
+        color="#f3edff"
         transparent
-        opacity={entered ? 0.78 : 0.68}
-        sizeAttenuation
+        opacity={0.65}
         depthWrite={false}
+        sizeAttenuation
       />
     </points>
   )
 }
 
-function InnerParticles({ entered }) {
-  const pointsRef = useRef()
+function SpeedLines({ activeProgressRef }) {
+  const groupRef = useRef()
 
-  const [positions] = useState(() => {
-    const count = 1000
-    const array = new Float32Array(count * 3)
+  const streaks = useMemo(() => {
+    const rand = createSeededRandom(2027)
 
-    for (let i = 0; i < count; i++) {
-      const i3 = i * 3
-      array[i3] = (Math.random() - 0.5) * 8
-      array[i3 + 1] = (Math.random() - 0.5) * 8
-      array[i3 + 2] = (Math.random() - 0.5) * 8
-    }
-
-    return array
-  })
+    return Array.from({ length: 34 }, (_, index) => ({
+      id: index,
+      x: (rand() - 0.5) * 16,
+      y: (rand() - 0.5) * 24,
+      z: -rand() * 70,
+      len: 0.18 + rand() * 0.5,
+      tilt: (rand() - 0.5) * 0.7,
+    }))
+  }, [])
 
   useFrame((state) => {
-    if (!pointsRef.current) return
+    if (!groupRef.current) return
+    const p = activeProgressRef.current
     const t = state.clock.elapsedTime
-    pointsRef.current.rotation.y = t * 0.03
-    pointsRef.current.rotation.z = Math.sin(t * 0.2) * 0.08
+
+    groupRef.current.position.y = p * 3.35
+    groupRef.current.position.z = p * 4.2
+    groupRef.current.rotation.z = Math.sin(t * 0.12) * 0.02
   })
 
-  if (!entered) return null
-
   return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={positions.length / 3}
-          array={positions}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        size={0.045}
-        color="#fff1dd"
-        transparent
-        opacity={0.6}
-        sizeAttenuation
-        depthWrite={false}
-      />
-    </points>
+    <group ref={groupRef}>
+      {streaks.map((streak) => (
+        <mesh
+          key={streak.id}
+          position={[
+            streak.x,
+            streak.y + Math.sin(streak.id * 1.7) * 0.3,
+            streak.z,
+          ]}
+          rotation={[0, 0, streak.tilt]}
+        >
+          <planeGeometry args={[0.02, streak.len]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0.82} />
+        </mesh>
+      ))}
+    </group>
   )
 }
 
-function InnerOrbs({ entered }) {
+function TimelinePath({ items }) {
+  const points = useMemo(() => {
+    return items.map((_, index) => {
+      const x = Math.sin(index * 0.55) * 0.85
+      const y = index * NODE_SPACING_Y
+      const z = index * NODE_SPACING_Z
+      return new THREE.Vector3(x, y, z)
+    })
+  }, [items])
+
+  const lineGeometry = useMemo(() => {
+    const curve = new THREE.CatmullRomCurve3(points)
+    const sampled = curve.getPoints(200)
+    return new THREE.BufferGeometry().setFromPoints(sampled)
+  }, [points])
+
+  return (
+    <line geometry={lineGeometry}>
+      <lineBasicMaterial color="#8ddcff" transparent opacity={0.22} />
+    </line>
+  )
+}
+
+function Hotspot({
+  index,
+  item,
+  activeIndex,
+  hoveredIndex,
+  onFocusIndex,
+  onSelectIndex,
+}) {
+  const groupRef = useRef()
+  const isFocused = hoveredIndex === index || activeIndex === index
+
+  useFrame((state) => {
+    if (!groupRef.current) return
+    const t = state.clock.elapsedTime
+    const pulse = isFocused ? 1.15 + Math.sin(t * 2.2) * 0.06 : 1 + Math.sin(t * 1.6) * 0.03
+    groupRef.current.scale.setScalar(pulse)
+  })
+
+  return (
+    <group ref={groupRef}>
+      <mesh
+        onPointerEnter={(e) => {
+          e.stopPropagation()
+          onFocusIndex(index)
+        }}
+        onPointerLeave={(e) => {
+          e.stopPropagation()
+          onFocusIndex(null)
+        }}
+        onClick={(e) => {
+          e.stopPropagation()
+          onSelectIndex(index)
+        }}
+      >
+        <sphereGeometry args={[0.16, 32, 32]} />
+        <meshBasicMaterial color={item.accent} transparent opacity={0.95} />
+      </mesh>
+
+      <mesh scale={2.7}>
+        <sphereGeometry args={[0.12, 24, 24]} />
+        <meshBasicMaterial color={item.accent} transparent opacity={isFocused ? 0.22 : 0.08} />
+      </mesh>
+
+      <Html
+        center
+        position={[0.7, 0.08, 0]}
+        distanceFactor={10}
+        style={{ pointerEvents: "none" }}
+      >
+        <div className={`point-label ${isFocused ? "active" : ""}`}>{item.label}</div>
+      </Html>
+    </group>
+  )
+}
+
+function TimelineNodes({
+  items,
+  activeIndex,
+  hoveredIndex,
+  onFocusIndex,
+  onSelectIndex,
+  activeProgressRef,
+}) {
+  const groupRef = useRef()
+
+  const nodes = useMemo(() => {
+    return items.map((item, index) => ({
+      ...item,
+      x: Math.sin(index * 0.55) * 0.85,
+      y: index * NODE_SPACING_Y,
+      z: index * NODE_SPACING_Z,
+    }))
+  }, [items])
+
+  useFrame(() => {
+    if (!groupRef.current) return
+    const p = activeProgressRef.current
+    groupRef.current.position.y = p * -NODE_SPACING_Y
+    groupRef.current.position.z = p * -NODE_SPACING_Z
+  })
+
+  return (
+    <group ref={groupRef}>
+      <TimelinePath items={items} />
+      {nodes.map((node, index) => (
+        <group key={node.id} position={[node.x, node.y, node.z]}>
+          <Hotspot
+            index={index}
+            item={node}
+            activeIndex={activeIndex}
+            hoveredIndex={hoveredIndex}
+            onFocusIndex={onFocusIndex}
+            onSelectIndex={onSelectIndex}
+          />
+        </group>
+      ))}
+    </group>
+  )
+}
+
+function PlanetAnchor({ activeProgressRef, activeIndex }) {
   const groupRef = useRef()
 
   useFrame((state) => {
     if (!groupRef.current) return
-    groupRef.current.rotation.y += 0.001
-    groupRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.1) * 0.05
-  })
 
-  if (!entered) return null
+    const t = state.clock.elapsedTime
+    const p = activeProgressRef.current
+
+    const anchorX = 1.7 + Math.sin(p * 0.55 + t * 0.45) * 0.22
+    const anchorY = p * NODE_SPACING_Y + Math.sin(t * 0.35) * 0.18
+    const anchorZ = p * NODE_SPACING_Z - 1.8 + Math.cos(t * 0.3) * 0.18
+
+    groupRef.current.position.x += (anchorX - groupRef.current.position.x) * 0.06
+    groupRef.current.position.y += (anchorY - groupRef.current.position.y) * 0.06
+    groupRef.current.position.z += (anchorZ - groupRef.current.position.z) * 0.06
+
+    groupRef.current.rotation.y += 0.0035
+    groupRef.current.rotation.z = Math.sin(t * 0.24) * 0.05
+
+    const targetScale = activeIndex === 7 ? 0.92 : 1
+    groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 0.05)
+  })
 
   return (
     <group ref={groupRef}>
-      <mesh position={[1.8, 0.8, -0.5]}>
-        <sphereGeometry args={[0.38, 32, 32]} />
-        <meshBasicMaterial color="#ffe9cf" transparent opacity={0.06} />
+      <mesh scale={1.68}>
+        <sphereGeometry args={[1.5, 64, 64]} />
+        <meshBasicMaterial color="#d9ceff" transparent opacity={0.05} />
       </mesh>
 
-      <mesh position={[-1.5, -0.6, 0.4]}>
-        <sphereGeometry args={[0.28, 32, 32]} />
-        <meshBasicMaterial color="#ffd4aa" transparent opacity={0.05} />
+      <mesh scale={1.26}>
+        <sphereGeometry args={[1.5, 64, 64]} />
+        <meshBasicMaterial color="#b7b0ef" transparent opacity={0.06} />
       </mesh>
 
-      <mesh position={[0.4, -1.4, -1]}>
-        <sphereGeometry args={[0.22, 32, 32]} />
-        <meshBasicMaterial color="#fff3e3" transparent opacity={0.045} />
-      </mesh>
+      <Venus />
     </group>
   )
 }
 
-function VenusGlow({ entered }) {
-  const glowRef = useRef()
+function CameraRig({ activeIndex, activeProgressRef }) {
+  const lookTargetRef = useRef(new THREE.Vector3())
+  const positionTargetRef = useRef(new THREE.Vector3())
 
   useFrame((state) => {
-    if (!glowRef.current) return
-    const pulse = 1 + Math.sin(state.clock.elapsedTime * 1.2) * 0.02
-    const base = entered ? 1.34 : 1.18
-    glowRef.current.scale.setScalar(base * pulse)
-  })
+    activeProgressRef.current += (activeIndex - activeProgressRef.current) * 0.05
 
-  return (
-    <mesh ref={glowRef}>
-      <sphereGeometry args={[1.5, 96, 96]} />
-      <meshBasicMaterial
-        color={entered ? "#ffcf94" : "#ffc983"}
-        transparent
-        opacity={entered ? 0.1 : 0.07}
-      />
-    </mesh>
-  )
-}
+    const p = activeProgressRef.current
+    const t = state.clock.elapsedTime
 
-function VenusCloudShell({ entered }) {
-  const shellRef = useRef()
+    const camX = Math.sin(p * 0.4 + t * 0.16) * 0.28
+    const camY = p * NODE_SPACING_Y + 0.12 + Math.cos(t * 0.2) * 0.08
+    const camZ = 7.4 + p * NODE_SPACING_Z
 
-  useFrame((state, delta) => {
-    if (!shellRef.current) return
-    shellRef.current.rotation.y += delta * (entered ? 0.04 : 0.018)
-    shellRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.2) * 0.03
-  })
+    positionTargetRef.current.set(camX, camY, camZ)
+    state.camera.position.lerp(positionTargetRef.current, 0.07)
 
-  return (
-    <mesh ref={shellRef} scale={entered ? 1.38 : 1.22}>
-      <sphereGeometry args={[1.5, 96, 96]} />
-      <meshBasicMaterial
-        color={entered ? "#f8dcc0" : "#f3d2a7"}
-        transparent
-        opacity={entered ? 0.09 : 0.04}
-      />
-    </mesh>
-  )
-}
+    const lookX = Math.sin(p * 0.55) * 0.2
+    const lookY = p * NODE_SPACING_Y
+    const lookZ = p * NODE_SPACING_Z - 3.8
 
-function VenusVeil({ entered }) {
-  const veilRef = useRef()
+    lookTargetRef.current.set(lookX, lookY, lookZ)
+    state.camera.lookAt(lookTargetRef.current)
 
-  useFrame((state) => {
-    if (!veilRef.current) return
-    const pulse = 1 + Math.sin(state.clock.elapsedTime * 0.9) * 0.015
-    veilRef.current.scale.setScalar((entered ? 1.75 : 1.58) * pulse)
-    veilRef.current.rotation.z += entered ? 0.0015 : 0.0004
-  })
-
-  return (
-    <mesh ref={veilRef}>
-      <sphereGeometry args={[1.5, 64, 64]} />
-      <meshBasicMaterial
-        color={entered ? "#f6dcc2" : "#f3d5ad"}
-        transparent
-        opacity={entered ? 0.04 : 0.018}
-      />
-    </mesh>
-  )
-}
-
-function InnerVeilRings({ entered }) {
-  const ringA = useRef()
-  const ringB = useRef()
-
-  useFrame((state) => {
-    if (!entered) return
-
-    if (ringA.current) {
-      ringA.current.rotation.z += 0.002
-      ringA.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.3) * 0.2
-    }
-
-    if (ringB.current) {
-      ringB.current.rotation.z -= 0.0015
-      ringB.current.rotation.y = Math.cos(state.clock.elapsedTime * 0.25) * 0.25
-    }
-  })
-
-  if (!entered) return null
-
-  return (
-    <group>
-      <mesh ref={ringA} rotation={[1.2, 0.2, 0]}>
-        <torusGeometry args={[2.35, 0.05, 24, 120]} />
-        <meshBasicMaterial color="#ffe5c8" transparent opacity={0.04} />
-      </mesh>
-
-      <mesh ref={ringB} rotation={[0.8, -0.4, 0.4]}>
-        <torusGeometry args={[2.9, 0.035, 24, 120]} />
-        <meshBasicMaterial color="#ffd4ab" transparent opacity={0.03} />
-      </mesh>
-    </group>
-  )
-}
-
-function CorePulse({ entered }) {
-  const pulseRef = useRef()
-
-  useFrame((state) => {
-    if (!pulseRef.current) return
-    const s = 1 + Math.sin(state.clock.elapsedTime * 1.8) * 0.05
-    pulseRef.current.scale.setScalar(s)
-  })
-
-  if (!entered) return null
-
-  return (
-    <mesh ref={pulseRef}>
-      <sphereGeometry args={[1.1, 64, 64]} />
-      <meshBasicMaterial color="#ffe6bb" transparent opacity={0.035} />
-    </mesh>
-  )
-}
-
-function ThresholdFog({ entered }) {
-  const fogRef = useRef()
-
-  useFrame((state) => {
-    if (!fogRef.current) return
-    fogRef.current.rotation.y += 0.0008
-    fogRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.12) * 0.08
-  })
-
-  if (!entered) return null
-
-  return (
-    <mesh ref={fogRef} scale={[12, 12, 12]}>
-      <sphereGeometry args={[1, 48, 48]} />
-      <meshBasicMaterial
-        color="#a35f32"
-        transparent
-        opacity={0.018}
-        side={2}
-      />
-    </mesh>
-  )
-}
-
-function CameraRig({ entered }) {
-  const targetYaw = useRef(0)
-  const targetPitch = useRef(0)
-  const targetDistance = useRef(7)
-
-  const currentYaw = useRef(0)
-  const currentPitch = useRef(0)
-  const currentDistance = useRef(7)
-
-  const gestureMode = useRef("none")
-  const lastPointer = useRef({ x: 0, y: 0 })
-  const pinchDistance = useRef(0)
-
-  useEffect(() => {
-    const clamp = (value, min, max) => Math.max(min, Math.min(max, value))
-
-    const getTouchDistance = (touches) => {
-      const dx = touches[0].clientX - touches[1].clientX
-      const dy = touches[0].clientY - touches[1].clientY
-      return Math.sqrt(dx * dx + dy * dy)
-    }
-
-    const deadZone = 2
-
-    const handlePointerDown = (e) => {
-      if (entered) return
-      gestureMode.current = "orbit"
-      lastPointer.current = { x: e.clientX, y: e.clientY }
-    }
-
-    const handlePointerMove = (e) => {
-      if (entered || gestureMode.current !== "orbit") return
-
-      const deltaX = e.clientX - lastPointer.current.x
-      const deltaY = e.clientY - lastPointer.current.y
-
-      if (Math.abs(deltaX) < deadZone && Math.abs(deltaY) < deadZone) return
-
-      targetYaw.current -= deltaX * 0.004
-      targetPitch.current += deltaY * 0.004
-      targetPitch.current = clamp(targetPitch.current, -0.9, 0.9)
-
-      lastPointer.current = { x: e.clientX, y: e.clientY }
-    }
-
-    const handlePointerUp = () => {
-      gestureMode.current = "none"
-    }
-
-    const handleWheel = (e) => {
-      if (entered) return
-      targetDistance.current += e.deltaY * 0.01
-      targetDistance.current = clamp(targetDistance.current, 3.2, 12)
-    }
-
-    const handleTouchStart = (e) => {
-      if (entered) return
-
-      if (e.touches.length === 1) {
-        gestureMode.current = "orbit"
-        lastPointer.current = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY,
-        }
-      } else if (e.touches.length === 2) {
-        gestureMode.current = "pinch"
-        pinchDistance.current = getTouchDistance(e.touches)
-      }
-    }
-
-    const handleTouchMove = (e) => {
-      if (entered) return
-
-      if (e.touches.length === 1 && gestureMode.current === "orbit") {
-        e.preventDefault()
-
-        const touch = e.touches[0]
-        const deltaX = touch.clientX - lastPointer.current.x
-        const deltaY = touch.clientY - lastPointer.current.y
-
-        if (Math.abs(deltaX) < deadZone && Math.abs(deltaY) < deadZone) return
-
-        targetYaw.current -= deltaX * 0.0045
-        targetPitch.current += deltaY * 0.004
-        targetPitch.current = clamp(targetPitch.current, -0.9, 0.9)
-
-        lastPointer.current = { x: touch.clientX, y: touch.clientY }
-      }
-
-      if (e.touches.length === 2 && gestureMode.current === "pinch") {
-        e.preventDefault()
-
-        const newDistance = getTouchDistance(e.touches)
-        const delta = pinchDistance.current - newDistance
-
-        targetDistance.current += delta * 0.008
-        targetDistance.current = clamp(targetDistance.current, 3.2, 12)
-
-        pinchDistance.current = newDistance
-      }
-    }
-
-    const handleTouchEnd = (e) => {
-      if (entered) return
-
-      if (e.touches.length === 0) {
-        gestureMode.current = "none"
-        pinchDistance.current = 0
-      } else if (e.touches.length === 1) {
-        gestureMode.current = "orbit"
-        lastPointer.current = {
-          x: e.touches[0].clientX,
-          y: e.touches[0].clientY,
-        }
-      }
-    }
-
-    window.addEventListener("pointerdown", handlePointerDown)
-    window.addEventListener("pointermove", handlePointerMove)
-    window.addEventListener("pointerup", handlePointerUp)
-    window.addEventListener("pointercancel", handlePointerUp)
-    window.addEventListener("wheel", handleWheel, { passive: true })
-
-    window.addEventListener("touchstart", handleTouchStart, { passive: false })
-    window.addEventListener("touchmove", handleTouchMove, { passive: false })
-    window.addEventListener("touchend", handleTouchEnd, { passive: false })
-    window.addEventListener("touchcancel", handleTouchEnd, { passive: false })
-
-    return () => {
-      window.removeEventListener("pointerdown", handlePointerDown)
-      window.removeEventListener("pointermove", handlePointerMove)
-      window.removeEventListener("pointerup", handlePointerUp)
-      window.removeEventListener("pointercancel", handlePointerUp)
-      window.removeEventListener("wheel", handleWheel)
-
-      window.removeEventListener("touchstart", handleTouchStart)
-      window.removeEventListener("touchmove", handleTouchMove)
-      window.removeEventListener("touchend", handleTouchEnd)
-      window.removeEventListener("touchcancel", handleTouchEnd)
-    }
-  }, [entered])
-
-  useFrame((state) => {
-    const desiredDistance = entered ? 2.7 : targetDistance.current
-
-    currentYaw.current += (targetYaw.current - currentYaw.current) * 0.08
-    currentPitch.current += (targetPitch.current - currentPitch.current) * 0.08
-    currentDistance.current += (desiredDistance - currentDistance.current) * 0.06
-
-    const r = currentDistance.current
-    const yaw = currentYaw.current
-    const pitch = currentPitch.current
-
-    const x = Math.sin(yaw) * Math.cos(pitch) * r
-    const y = Math.sin(pitch) * r
-    const z = Math.cos(yaw) * Math.cos(pitch) * r
-
-    state.camera.position.x = x
-    state.camera.position.y = y
-    state.camera.position.z = z
-    state.camera.lookAt(0, 0, 0)
-
-    const targetFov = entered ? 95 : 85
-    state.camera.fov += (targetFov - state.camera.fov) * 0.05
+    state.camera.fov += (62 - state.camera.fov) * 0.05
     state.camera.updateProjectionMatrix()
   })
 
   return null
 }
 
-function VenusGroup({ entered, setEntered }) {
-  const groupRef = useRef()
+export default function VenusScene({
+  items,
+  activeIndex,
+  hoveredIndex,
+  onFocusIndex,
+  onSelectIndex,
+}) {
+  const activeProgressRef = useRef(0)
 
-  useFrame((state) => {
-    if (!groupRef.current) return
-    const t = state.clock.elapsedTime
-    groupRef.current.rotation.y += 0.0015
-    groupRef.current.position.x = Math.sin(t * 0.4) * 0.15
-    groupRef.current.position.y = Math.cos(t * 0.35) * 0.12
-  })
-
-  return (
-    <group ref={groupRef} onClick={() => setEntered(true)}>
-      <VenusVeil entered={entered} />
-      <VenusGlow entered={entered} />
-      <VenusCloudShell entered={entered} />
-      <CorePulse entered={entered} />
-      <Venus />
-    </group>
-  )
-}
-
-export default function VenusScene({ entered, setEntered }) {
   return (
     <>
-      <color attach="background" args={[entered ? "#12070a" : "#04010a"]} />
-      <fog attach="fog" args={[entered ? "#241008" : "#04010a", entered ? 6 : 14, entered ? 18 : 42]} />
+      <color attach="background" args={["#020206"]} />
+      <fog attach="fog" args={["#020206", 10, 34]} />
 
-      <ambientLight intensity={entered ? 0.58 : 0.32} />
-      <pointLight position={[3, 2, 4]} intensity={entered ? 24 : 14} color="#ffd9b0" />
-      <pointLight position={[-4, -2, -4]} intensity={entered ? 7 : 3} color="#ffb882" />
+      <ambientLight intensity={0.4} />
+      <pointLight position={[2.5, 2, 3]} intensity={8} color="#e7dcff" />
+      <pointLight position={[-4, -3, -3]} intensity={3} color="#7469b6" />
 
-      <Stars
-        radius={90}
-        depth={45}
-        count={entered ? 1800 : 5000}
-        factor={entered ? 2.0 : 2.8}
-        saturation={0}
-        fade
+      <Stars radius={120} depth={100} count={5000} factor={2.7} saturation={0} fade />
+
+      <NebulaBands activeProgressRef={activeProgressRef} />
+      <DustField activeProgressRef={activeProgressRef} />
+      <SpeedLines activeProgressRef={activeProgressRef} />
+
+      <TimelineNodes
+        items={items}
+        activeIndex={activeIndex}
+        hoveredIndex={hoveredIndex}
+        onFocusIndex={onFocusIndex}
+        onSelectIndex={onSelectIndex}
+        activeProgressRef={activeProgressRef}
       />
 
-      <ThresholdFog entered={entered} />
-      <FloatingParticles entered={entered} />
-      <InnerParticles entered={entered} />
-      <InnerOrbs entered={entered} />
-      <InnerVeilRings entered={entered} />
-      <CameraRig entered={entered} />
-      <VenusGroup entered={entered} setEntered={setEntered} />
+      <PlanetAnchor activeProgressRef={activeProgressRef} activeIndex={activeIndex} />
+      <CameraRig activeIndex={activeIndex} activeProgressRef={activeProgressRef} />
 
       <EffectComposer>
         <Bloom
-          intensity={entered ? 0.7 : 0.45}
-          luminanceThreshold={0.28}
+          intensity={0.36}
+          luminanceThreshold={0.22}
           luminanceSmoothing={0.95}
           mipmapBlur
         />
