@@ -1,23 +1,30 @@
-import { useFrame } from "@react-three/fiber"
+import { useFrame, useLoader } from "@react-three/fiber"
 import { useRef } from "react"
+import * as THREE from "three"
 
 export default function Venus() {
   const meshRef = useRef()
 
+  const texture = useLoader(
+    THREE.TextureLoader,
+    "/textures/venus-texture.png"
+  )
+
   useFrame((_, delta) => {
     if (!meshRef.current) return
-    meshRef.current.rotation.y += delta * 0.06
+    meshRef.current.rotation.y += delta * 0.05
   })
 
   return (
     <mesh ref={meshRef}>
       <sphereGeometry args={[1.5, 96, 96]} />
       <meshStandardMaterial
-        color="#d89b52"
-        emissive="#b8642b"
-        emissiveIntensity={0.95}
-        roughness={0.92}
-        metalness={0.02}
+        map={texture}
+        color="#f3d3a2"
+        emissive="#9c5a28"
+        emissiveIntensity={0.28}
+        roughness={0.95}
+        metalness={0.01}
       />
     </mesh>
   )
